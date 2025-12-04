@@ -1,0 +1,220 @@
+﻿@model dacn.Models.DanhMuc
+
+@{
+    string loai = ViewBag.Loai ?? "Thu";
+    string title = loai == "Thu" ? "Khoản Thu" : "Khoản Chi";
+    ViewBag.Title = "Thêm Giao Dịch Mới";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<main id="main" class="main">
+    <div class="pagetitle">
+        <h1>Thêm Giao Dịch Mới</h1>
+        <nav>
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="@Url.Action("Index", "TrangChu")">Trang chủ</a></li>
+                <li class="breadcrumb-item active">Thêm giao dịch</li>
+            </ol>
+        </nav>
+    </div>
+
+    <section class="section">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Thông tin danh mục</h5>
+
+                        @using (Html.BeginForm("Create", "DanhMucs", FormMethod.Post, new { @class = "row g-3", id = "createForm" }))
+                        {
+                            @Html.AntiForgeryToken()
+
+                            <!-- Radio chọn loại giao dịch -->
+                            <div class="col-12">
+                                <label class="form-label fw-bold">Loại danh mục <span class="text-danger">*</span></label>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check card border-2" id="thuCard">
+                                            <input class="form-check-input" type="radio" name="Loai" id="loaiThu" value="Thu" @(loai == "Thu" ? "checked" : "")>
+                                            <label class="form-check-label card-body text-success" for="loaiThu">
+                                                <div class="d-flex align-items-center">
+                                                    <i class="bi bi-arrow-down-circle fs-4 me-3"></i>
+                                                    <div>
+                                                        <h1></h1>
+                                                        <h2></h2>
+                                                        <h6 class="mb-1">Khoản Thu</h6>
+                                                        <small class="text-muted">Tiền vào ví (lương, thưởng, đầu tư...)</small>
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="form-check card border-2" id="chiCard">
+                                            <input class="form-check-input" type="radio" name="Loai" id="loaiChi" value="Chi" @(loai == "Chi" ? "checked" : "")>
+                                            <label class="form-check-label card-body text-danger" for="loaiChi">
+                                                <div class="d-flex align-items-center">
+                                                    <i class="bi bi-arrow-up-circle fs-4 me-3"></i>
+                                                    <div>
+                                                        <h1></h1>
+                                                        <h2></h2>
+                                                        <h6 class="mb-1">Khoản Chi</h6>
+                                                        <small class="text-muted">Tiền ra ví (mua sắm, ăn uống, hóa đơn...)</small>
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+
+                            <div class="col-md-12">
+                                <div class="form-floating">
+                                    @Html.TextBoxFor(model => model.TenDanhMuc, new { @class = "form-control", placeholder = "Nhập tên danh mục", required = "required" })
+                                    @Html.LabelFor(model => model.TenDanhMuc)
+                                    @Html.ValidationMessageFor(model => model.TenDanhMuc, "", new { @class = "text-danger" })
+                                </div>
+                            </div>
+
+                            <div class="col-md-12">
+                                <div class="form-floating">
+                                    @Html.TextBox("MoTa", "", new { @class = "form-control", placeholder = "Nhập mô tả (tùy chọn)" })
+                                    <label for="MoTa">Mô tả danh mục</label>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    @Html.TextBox("SoTien", "", new { @class = "form-control", type = "number", step = "0.01", min = "1", placeholder = "Nhập số tiền", required = "required" })
+                                    <label for="SoTien">Số tiền (VNĐ)</label>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    @Html.TextBox("NgayGD", DateTime.Now.ToString("yyyy-MM-ddTHH:mm"), new { @class = "form-control", type = "datetime-local", required = "required" })
+                                    <label for="NgayGD">Ngày tạo</label>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="taoThem" name="taoThem">
+                                    <label class="form-check-label" for="taoThem">
+                                        Tiếp tục thêm danh mục khác sau khi lưu
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="text-center">
+                                <button type="submit" class="btn btn-primary" id="submitBtn">
+                                    <i class="bi bi-check-circle me-2"></i>Lưu Danh mục
+                                </button>
+                                <a href="@Url.Action("Index", "TrangChu")" class="btn btn-secondary">
+                                    <i class="bi bi-x-circle me-2"></i>Hủy bỏ
+                                </a>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Xử lý style cho radio card
+            function updateCardStyle() {
+                $('#thuCard').removeClass('border-success bg-light-success');
+                $('#chiCard').removeClass('border-danger bg-light-danger');
+
+                if ($('#loaiThu').is(':checked')) {
+                    $('#thuCard').addClass('border-success bg-light-success');
+                    $('#submitBtn').removeClass('btn-danger').addClass('btn-primary');
+                } else {
+                    $('#chiCard').addClass('border-danger bg-light-danger');
+                    $('#submitBtn').removeClass('btn-primary').addClass('btn-danger');
+                }
+            }
+
+            // Cập nhật style khi trang load
+            updateCardStyle();
+
+            // Cập nhật style khi radio thay đổi
+            $('input[name="Loai"]').change(function () {
+                updateCardStyle();
+            });
+
+            // Validation form
+            $('#createForm').submit(function (e) {
+                var soTien = $('#SoTien').val();
+                var tenDanhMuc = $('#TenDanhMuc').val();
+                var loai = $('input[name="Loai"]:checked').val();
+
+                if (!loai) {
+                    alert('Vui lòng chọn loại giao dịch');
+                    return false;
+                }
+
+                if (!tenDanhMuc.trim()) {
+                    alert('Vui lòng nhập tên danh mục');
+                    $('#TenDanhMuc').focus();
+                    return false;
+                }
+
+                if (!soTien || soTien <= 0) {
+                    alert('Số tiền phải lớn hơn 0');
+                    $('#SoTien').focus();
+                    return false;
+                }
+
+                // Hiển thị loading
+                $('#submitBtn').html('<i class="bi bi-hourglass-split me-2"></i>Đang xử lý...');
+                $('#submitBtn').prop('disabled', true);
+
+                return true;
+            });
+
+            // Reset button khi form bị validation error
+            $('#createForm').on('invalid-form', function () {
+                $('#submitBtn').html('<i class="bi bi-check-circle me-2"></i>Lưu Giao Dịch');
+                $('#submitBtn').prop('disabled', false);
+            });
+        });
+    </script>
+
+    <style>
+        .form-check .card {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+            .form-check .card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            }
+
+        .form-check-input {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+        }
+
+        .form-check-label {
+            padding-left: 40px !important;
+            cursor: pointer;
+        }
+
+        .bg-light-success {
+            background-color: rgba(25, 135, 84, 0.1) !important;
+        }
+
+        .bg-light-danger {
+            background-color: rgba(220, 53, 69, 0.1) !important;
+        }
+    </style>
+}

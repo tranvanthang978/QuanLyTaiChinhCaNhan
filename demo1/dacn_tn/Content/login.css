@@ -1,0 +1,169 @@
+﻿.login-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.login-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 480px;
+    padding: 2.5rem;
+}
+
+.login-icon {
+    width: 70px;
+    height: 70px;
+    background-color: #f0f2f5;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+}
+
+/* Cải thiện style cho form-floating */
+.form-floating {
+    position: relative;
+    margin-bottom: 1.5rem; /* Tăng khoảng cách giữa các input */
+}
+
+    /* Điều chỉnh input để không bị che chữ */
+    .form-floating .form-control {
+        height: 60px !important;
+        border-radius: 10px !important;
+        padding: 1.5rem 3rem 0.625rem 3rem !important;
+        font-size: 1rem;
+        line-height: 1.25;
+        border: 2px solid #e1e1e1;
+        transition: all 0.2s ease-in-out;
+    }
+
+    /* Điều chỉnh label */
+    .form-floating > label {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        padding: 1rem 3rem !important;
+        color: #6c757d;
+        font-size: 1rem;
+        pointer-events: none;
+        border: 1px solid transparent;
+        transform-origin: 0 0;
+        transition: all 0.2s ease-in-out;
+        display: flex;
+        align-items: center;
+    }
+
+    /* Style khi focus hoặc có nội dung */
+    .form-floating > .form-control:focus,
+    .form-floating > .form-control:not(:placeholder-shown) {
+        padding-top: 1.625rem !important;
+        padding-bottom: 0.625rem !important;
+    }
+
+        .form-floating > .form-control:focus ~ label,
+        .form-floating > .form-control:not(:placeholder-shown) ~ label,
+        .form-floating > .form-control:-webkit-autofill ~ label {
+            opacity: 1;
+            transform: scale(0.85) translateY(-0.5rem) translateX(0.15rem);
+            color: #6c5ce7;
+            background: white;
+            height: auto;
+            padding: 0 0.5rem !important;
+            margin-left: 2.5rem;
+        }
+
+        /* Đảm bảo label không bị cắt khi zoom */
+        .form-floating > .form-control:focus ~ label {
+            z-index: 3;
+        }
+
+/* Style cho icons */
+.input-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #a0a0a0;
+    font-size: 1.2rem;
+    pointer-events: none;
+    z-index: 4;
+    transition: all 0.2s ease-in-out;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #a0a0a0;
+    font-size: 1.2rem;
+    cursor: pointer;
+    z-index: 4;
+    transition: all 0.2s ease-in-out;
+}
+
+/* Hiệu ứng hover và focus */
+.form-floating:hover .input-icon,
+.form-floating:hover .password-toggle {
+    color: #6c5ce7;
+}
+
+.form-control:focus {
+    border-color: #6c5ce7;
+    box-shadow: 0 0 0 0.25rem rgba(108, 92, 231, 0.1);
+}
+
+    .form-control:focus ~ .input-icon {
+        color: #6c5ce7;
+    }
+
+/* Button style */
+.login-button {
+    background: #6c5ce7;
+    border: none;
+    height: 50px;
+    border-radius: 10px;
+    font-weight: 500;
+    font-size: 16px;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    margin-top: 0.5rem; /* Thêm khoảng cách với ô input cuối */
+}
+
+    .login-button:hover {
+        background: #5b4cc4;
+        transform: translateY(-1px);
+        box-shadow: 0 5px 15px rgba(108, 92, 231, 0.4);
+    }
+
+/* Copyright section */
+.copyright-section {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e9ecef;
+}
+
+.copyright-text {
+    font-size: 12px;
+    color: #6c757d;
+    margin: 0;
+}
+
+/* Link style */
+a.text-decoration-none {
+    color: #6c5ce7;
+    font-weight: 500;
+    transition: all 0.2s ease-in-out;
+}
+
+    a.text-decoration-none:hover {
+        color: #5b4cc4;
+        text-decoration: underline !important;
+    }

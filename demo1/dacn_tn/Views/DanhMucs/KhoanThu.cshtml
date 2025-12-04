@@ -1,0 +1,109 @@
+﻿@model IEnumerable<dacn.Models.DanhMuc>
+
+@{
+    ViewBag.Title = "Khoản Thu";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<main id="main" class="main">
+    <div class="pagetitle">
+        <h1>Quản lý Khoản Thu</h1>
+        <nav>
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="@Url.Action("Index", "TrangChu")">Trang chủ</a></li>
+                <li class="breadcrumb-item active">Khoản Thu</li>
+            </ol>
+        </nav>
+    </div>
+
+    <section class="section">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Danh Sách Các Khoản Thu</h5>
+
+                        <p>
+                            @Html.ActionLink("Thêm khoản thu mới ", "Create", null, new { @class = "btn btn-primary btn-sm" })
+                        </p>
+
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="m-0 p-0 text-muted">Chi tiết giao dịch</h6>
+                            <div class="input-group" style="width: 300px;">
+                                <input type="text" class="form-control" placeholder="Tìm kiếm giao dịch..." aria-label="Tìm kiếm giao dịch" id="searchInput">
+                                <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-funnel"></i> <!-- Icon Lọc -->
+                                </button>
+                                <!-- Dropdown menu cho Lọc (tĩnh) -->
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item" href="#">Lọc theo Ngày</a></li>
+                                    <li><a class="dropdown-item" href="#">Lọc theo Danh mục</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="#">Hiển thị tất cả</a></li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <table class="table table-striped table-hover datatable">
+                            <thead>
+                                <tr>
+                                    <th>Ngày </th>
+                                    <th>Mô tả</th>
+                                    <th>Danh mục</th>
+                                    <th>Loại</th>
+                                    <th>Tiền</th>
+                                    <th class="text-center">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+
+
+
+                                @foreach (var item in Model)
+                                {
+                                    var giaoDichGanNhat = item.GiaoDich?
+                                       .OrderByDescending(gd => gd.NgayGD)
+                                       .FirstOrDefault();
+                                    <tr>
+                                        <td>@(giaoDichGanNhat?.NgayGD.ToString("dd/MM/yyyy") ?? "N/A")</td>
+                                        <td>@(giaoDichGanNhat?.MoTa ?? "N/A")</td>
+                                        <td>@item.TenDanhMuc</td>
+                                        <td>@item.Loai</td>
+                                        <td>@((giaoDichGanNhat?.SoTien.ToString("#,##0") ?? "N/A") + " VNĐ")</td>
+                                        <td class="text-center">
+                                            @Html.ActionLink("Sửa", "Edit", new { id = item.MaDanhMuc }, new { @class = "btn btn-outline-info btn-sm" })
+                                            @Html.ActionLink("Chi tiết", "Details", new { id = item.MaDanhMuc }, new { @class = "btn btn-outline-secondary btn-sm" })
+                                            @Html.ActionLink("Xóa", "Delete", new { id = item.MaDanhMuc }, new { @class = "btn btn-outline-danger btn-sm" })
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                        <!-- Bổ sung phân trang (Pagination) theo yêu cầu -->
+                        <div class="d-flex justify-content-center mt-3">
+                            <nav aria-label="Phân trang giao dịch">
+                                <ul class="pagination">
+                                    <li class="page-item disabled">
+                                        <a class="page-link" href="#" aria-label="Trước">
+                                            <span aria-hidden="true">Trước</span>
+                                        </a>
+                                    </li>
+                                    <!-- Trang hiện tại (Active) -->
+                                    <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                                    <li class="page-item"><a class="page-link" href="#">2</a></li>
+                                    <li class="page-item"><a class="page-link" href="#">3</a></li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="#" aria-label="Tiếp">
+                                            <span aria-hidden="true">Tiếp</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>

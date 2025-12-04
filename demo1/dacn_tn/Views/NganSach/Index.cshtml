@@ -1,0 +1,504 @@
+﻿
+
+
+@model IEnumerable<dacn.Models.NganSach>
+
+
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.Title = "ngansach";
+}
+}
+
+<main id="main" class="main">
+    <div class="pagetitle">
+        <h1>Quản lý Ngân sách</h1>
+        <nav>
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="index.html">Trang chủ</a></li>
+                <li class="breadcrumb-item active">Ngân Sách</li>
+            </ol>
+        </nav>
+    </div>
+    <!-- End Page Title -->
+
+    <section class="section dashboard">
+        <div class="row">
+            <!-- Card Tổng quan -->
+            <div class="col-lg-4">
+                <div class="card info-card revenue-card">
+                    <div class="card-body">
+                        <h5 class="card-title">Tổng ngân sách </h5>
+                        <h6>@String.Format("{0:N0} ₫", ViewBag.TongNganSach)</h6>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card info-card">
+                    <div class="card-body">
+                        <h5 class="card-title">Tổng đã chi</h5>
+                        <h6 class="text-primary">@String.Format("{0:N0} ₫", ViewBag.TongDaChi)</h6>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card info-card">
+                    <div class="card-body">
+                        <h5 class="card-title">Đến cuối tháng</h5>
+                        <h6 class="text-danger">@ViewBag.NgayConLai ngày</h6>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- End Row -->
+
+
+        <div class="row">
+
+
+            <!-- Danh sách giao dịch -->
+            <div class="col-lg-6" style="flex: 0 0 100%;max-width: 100%;">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="card-title d-flex justify-content-between align-items-center">
+                            Danh sách Ngân sách
+                            <div class="d-flex justify-content-end mb-3">
+                                <button class="btn btn-success btn-sm me-2"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#addTransactionModal">
+                                    + Tạo ngân sách
+                                </button>
+                                <button class="btn btn-success btn-sm" onclick="window.location.href='/NganSach/ExportToCsv'">
+                                    Xuất CSV
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                        <ul class="list-group" id="transactionList">
+                            @foreach (var item in Model)
+                            {
+                                <!-- Item 1 -->
+                            <li class="list-group-item" data-id="@item.MaNganSach">
+                                
+                                <div class="row align-items-center justify-content-end">
+                                    <!-- Cột 1: Tên -->
+
+                                    <div class="col fw-bold fs-5">@item.DanhMuc.TenDanhMuc</div>
+
+                                    <!-- Cột 2: Hai dòng tiền -->
+                                    <div class="col-auto text-end me-2">
+                                        <div class="fw-bold fs-5  mb-0">@String.Format("{0:N0} ₫", item.SoTienGioiHan)</div>
+                                        <div class="text-muted small">Còn lại @String.Format("{0:N0} ₫", item.ConLai)</div>
+                                    </div>
+
+                                    <!-- Cột 3: Hai nút -->
+                                    <div class="col-auto">
+                                        <button type="button" class="btn btn-sm btn-warning edit-btn">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-danger delete-btn" data-id="@item.MaNganSach">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <!-- Thanh tiến trình -->
+                                <div class="progress mt-2" style="height: 8px;">
+                                    <div id="progress-bar-@item.MaNganSach" class="progress-bar bg-success" style="width: 60%;"></div>
+                                </div>
+                            </li>
+
+                                
+                            }
+                        
+
+
+
+
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- End Row -->
+    </section>
+</main>
+<!-- End #main -->
+<script>
+
+    document.addEventListener("DOMContentLoaded", function () {
+        // Dữ liệu từ server
+        const budgets = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(
+            Model.Select(m => new {
+                m.MaNganSach,
+                m.DaChi,
+                m.ConLai,
+                m.SoTienGioiHan
+            })
+        ));
+
+        budgets.forEach(item => {
+            const daChi = item.DaChi;
+            const conLai = item.ConLai;
+            const mucGioiHan = item.SoTienGioiHan;
+            const progressBar = document.getElementById(`progress-bar-${item.MaNganSach}`);
+
+            if (!progressBar) return;
+
+            // Xác định màu
+            if (daChi >= mucGioiHan || conLai < 0) {
+                progressBar.classList.remove("bg-success");
+                progressBar.classList.add("bg-danger");
+            } else {
+                progressBar.classList.remove("bg-danger");
+                progressBar.classList.add("bg-success");
+            }
+
+            // Tính phần trăm
+            const phanTram = Math.min((daChi / mucGioiHan) * 100, 100);
+            progressBar.style.width = phanTram + "%";
+        });
+    });
+
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const transactionList = document.getElementById("transactionList");
+
+        const addModalEl = document.getElementById("addTransactionModal");
+        const editModalEl = document.getElementById("editTransactionModal");
+        const deleteModalEl = document.getElementById("deleteConfirmModal");
+
+        const addModal = new bootstrap.Modal(addModalEl);
+        const editModal = new bootstrap.Modal(editModalEl);
+        const deleteModal = new bootstrap.Modal(deleteModalEl);
+
+        const addSaveBtn = document.getElementById("addSaveBtn");
+        const editSaveBtn = document.getElementById("editSaveBtn");
+        const deleteConfirmBtn = document.getElementById("deleteConfirmBtn");
+
+        let currentEditItem = null;
+        let currentDeleteItem = null;
+
+        // helper: dd/mm/yyyy <-> yyyy-mm-dd
+        function ddmmyyyyToISO(s) {
+            if (!s) return "";
+            const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+            if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+            if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+            return "";
+        }
+        function isoToDisplay(iso) {
+            if (!iso) return "";
+            const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+            return iso;
+        }
+
+        // ===== Thêm ngân sách =====
+        addSaveBtn.addEventListener("click", function () {
+            const maDanhMuc = document.getElementById("addDanhMuc").value;
+            const amount = document.getElementById("addAmount").value;
+            const date = document.getElementById("addDate").value;
+
+            if (!maDanhMuc || !amount || !date) {
+                alert("Vui lòng nhập đủ thông tin!");
+                return;
+            }
+
+            const formData = new URLSearchParams();
+            formData.append("MaDanhMuc", maDanhMuc);
+            formData.append("SoTienGioiHan", amount);
+            formData.append("NgayTao", date);
+
+            fetch("/NganSach/Create", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: formData.toString(),
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        alert("Thêm ngân sách thành công!");
+                        document.getElementById("addTransactionForm").reset();
+                        addModal.hide();
+
+                        // ✅ Reload hoặc chuyển hướng đến trang Index
+                        window.location.href = data.redirectUrl;
+
+                    } else {
+                        alert(data.message || "Lỗi thêm ngân sách!");
+                    }
+                })
+                .catch(err => alert("Không gửi được dữ liệu lên server"));
+        });
+
+
+        // ===== Event delegation for Edit / Delete buttons =====
+        // ===== Event delegation for Edit / Delete buttons =====
+        transactionList.addEventListener("click", function (e) {
+            const editBtn = e.target.closest(".edit-btn");
+            const delBtn = e.target.closest(".delete-btn");
+
+            if (editBtn) {
+                currentEditItem = editBtn.closest("li");
+
+                const id = currentEditItem.dataset.id;
+                const maDanhMuc = currentEditItem.dataset.danhmuc;
+                const amountText = currentEditItem.querySelector(".fw-bold + div")?.innerText.trim() || "";
+                const rawAmount = parseInt(amountText.replace(/\D/g, "")) || 0;
+                const smallText = currentEditItem.querySelector("small")?.innerText.trim() || "";
+                const datePart = smallText; // nếu smallText chỉ chứa ngày
+
+                document.getElementById("editId").value = id;
+                document.getElementById("editName").value = maDanhMuc;
+                document.getElementById("editAmount").value = rawAmount;
+                document.getElementById("editDate").value = ddmmyyyyToISO(datePart);
+
+
+                editModal.show();
+                return;
+            }
+
+            if (delBtn) {
+                currentDeleteItem = delBtn.closest("li");
+                deleteModal.show();
+                return;
+            }
+        });
+
+
+        // ===== Lưu thay đổi sau khi sửa =====
+        // ===== Lưu thay đổi sau khi sửa =====
+        editSaveBtn.addEventListener("click", function () {
+            if (!currentEditItem) return;
+
+            // Lấy dữ liệu từ form
+            const id = currentEditItem.dataset.id; // Id của NganSach
+            const maDanhMuc = document.getElementById("editName").value.trim();
+            const soTienGioiHan = Number(document.getElementById("editAmount").value || 0);
+            const ngayTao = document.getElementById("editDate").value;
+
+            // Validate
+            if (!id || !maDanhMuc || !soTienGioiHan || !ngayTao) {
+                alert("Vui lòng nhập đầy đủ: danh mục, số tiền, ngày.");
+                return;
+            }
+
+            // Gửi AJAX POST lên backend
+            fetch("/NganSach/Edit", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    MaNganSach: id,
+                    MaDanhMuc: maDanhMuc,
+                    SoTienGioiHan: soTienGioiHan,
+                    NgayTao: ngayTao
+                })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        // Cập nhật hiển thị HTML
+                        // Cột 1: Tên danh mục
+                        currentEditItem.querySelector(".col.fw-bold.fs-5").innerText =
+                            document.getElementById("editName").selectedOptions[0].text;
+
+                        // Cột 2: Số tiền (giữ nguyên "Còn lại")
+                        const col2 = currentEditItem.querySelector(".col-auto.text-end.me-2");
+                        col2.querySelector(".fw-bold").innerText = soTienGioiHan.toLocaleString();
+
+
+                        editModal.hide();
+                        currentEditItem = null;
+                        // ✅ Reload hoặc chuyển hướng đến trang Index
+                        window.location.href = data.redirectUrl;
+                    } else {
+                        alert(data.message || "Cập nhật thất bại!");
+                    }
+                })
+                .catch(err => alert("Không gửi được dữ liệu lên server"));
+        });
+
+
+        // ===== Xác nhận xóa =====
+
+
+        deleteConfirmBtn.addEventListener("click", function () {
+            if (currentDeleteItem) {
+                const itemId = currentDeleteItem.getAttribute("data-id");
+
+                // Gửi request xoá đến server
+                fetch("/NganSach/DeleteConfirmed", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ id: itemId })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Nếu xoá thành công thì xoá khỏi giao diện
+                            currentDeleteItem.remove();
+                            currentDeleteItem = null;
+                            deleteModal.hide();
+                        } else {
+                            alert("Xoá thất bại: " + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Lỗi khi gửi request xoá:", error);
+                    });
+            } else {
+                deleteModal.hide();
+            }
+        });
+
+
+
+
+
+
+        // small helper to avoid injecting raw html
+        function escapeHtml(str) {
+            return (str + "").replace(/[&<>"']/g, function (m) {
+                return {
+                    "&": "&amp;",
+                    "<": "&lt;",
+                    ">": "&gt;",
+                    '"': "&quot;",
+                    "'": "&#39;",
+                }[m];
+            });
+        }
+    });
+
+
+</script>
+
+<!-- Modal Thêm -->
+<div class="modal fade" id="addTransactionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Thêm Ngân sách mới</h5>
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addTransactionForm">
+                    <div class="mb-3">
+                        <label class="form-label">Danh mục</label>
+                        <select id="addDanhMuc" class="form-select">
+                            <option value="">-- Chọn danh mục --</option>
+                            @foreach (var dm in ViewBag.DanhMucChi)
+                            {
+                                <option value="@dm.MaDanhMuc">@dm.TenDanhMuc</option>
+                            }
+                        </select>
+
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Số tiền</label>
+                        <input type="number"
+                               id="addAmount"
+                               class="form-control"
+                               placeholder="VD: 50000" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label"> thời gian</label>
+                        <input type="date" id="addDate" class="form-control" />
+                    </div>
+
+
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">
+                    Hủy
+                </button>
+                <button type="button" class="btn btn-primary" id="addSaveBtn">
+                    Lưu
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Modal Sửa -->
+<div class="modal fade" id="editTransactionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Sửa giao dịch</h5>
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editTransactionForm">
+                    <div class="mb-3">
+                        <label class="form-label">MaNganSach</label>
+                        <input type="number" id="editId" class="form-control" readonly />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Danh mục</label>
+                        <select id="editName" class="form-select">
+                            <option value="">-- Chọn danh mục --</option>
+                            @foreach (var dm in ViewBag.DanhMucChi)
+                            {
+                                <option value="@dm.MaDanhMuc">@dm.TenDanhMuc</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Số tiền</label>
+                        <input type="number" id="editAmount" class="form-control" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Ngày</label>
+                        <input type="date" id="editDate" class="form-control" />
+                    </div>
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">
+                    Hủy
+                </button>
+                <button type="button" class="btn btn-primary" id="editSaveBtn">
+                    Cập nhật
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Xoá -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-body">Bạn có chắc muốn xoá giao dịch này?</div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
+                    Hủy
+                </button>
+                <button type="button"
+                        class="btn btn-danger btn-sm"
+                        id="deleteConfirmBtn">
+                    Xoá
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

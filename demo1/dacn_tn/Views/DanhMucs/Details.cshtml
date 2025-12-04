@@ -1,0 +1,80 @@
+﻿@model dacn.Models.DanhMuc
+
+@{
+    string loai = Model?.Loai ?? "Thu";
+    string title = loai == "Thu" ? "Khoản Thu" : "Khoản Chi";
+    ViewBag.Title = "Chi tiết " + title;
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var giaoDichGanNhat = Model?.GiaoDich?.OrderByDescending(gd => gd.NgayGD).FirstOrDefault();
+    var badgeClass = loai == "Thu" ? "bg-success" : "bg-danger";
+}
+
+<main id="main" class="main">
+    <div class="pagetitle">
+        <h1>Chi tiết @title</h1>
+        <nav>
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="@Url.Action("Index", "TrangChu")">Trang chủ</a></li>
+                <li class="breadcrumb-item"><a href="@Url.Action("Khoan" + loai, "DanhMucs")">@title</a></li>
+                <li class="breadcrumb-item active">Chi tiết</li>
+            </ol>
+        </nav>
+    </div>
+
+    <section class="section">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Thông tin chi tiết</h5>
+
+                        <div class="row mb-3">
+                            <div class="col-lg-3 col-md-4 label">Tên danh mục</div>
+                            <div class="col-lg-9 col-md-8">@Model.TenDanhMuc</div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-lg-3 col-md-4 label">Loại</div>
+                            <div class="col-lg-9 col-md-8">
+                                <span class="badge @badgeClass">@Model.Loai</span>
+                            </div>
+                        </div>
+
+                        @if (giaoDichGanNhat != null)
+                        {
+                            <div class="row mb-3">
+                                <div class="col-lg-3 col-md-4 label">Mô tả</div>
+                                <div class="col-lg-9 col-md-8">@(giaoDichGanNhat.MoTa ?? "Không có mô tả")</div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-lg-3 col-md-4 label">Số tiền</div>
+                                <div class="col-lg-9 col-md-8">
+                                    <strong class="text-primary">@giaoDichGanNhat.SoTien.ToString("#,##0") VNĐ</strong>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-lg-3 col-md-4 label">Ngày giao dịch</div>
+                                <div class="col-lg-9 col-md-8">@giaoDichGanNhat.NgayGD.ToString("dd/MM/yyyy HH:mm")</div>
+                            </div>
+                        }
+
+                        <div class="row mb-3">
+                            <div class="col-lg-3 col-md-4 label">Tổng số giao dịch</div>
+                            <div class="col-lg-9 col-md-8">
+                                <span class="badge bg-info">@Model.GiaoDich.Count</span>
+                            </div>
+                        </div>
+
+                        <div class="text-center">
+                            @Html.ActionLink("Sửa", "Edit", new { id = Model.MaDanhMuc }, new { @class = "btn btn-primary" })
+                            <a href="@Url.Action("Khoan" + loai, "DanhMucs")" class="btn btn-secondary">Quay lại</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>

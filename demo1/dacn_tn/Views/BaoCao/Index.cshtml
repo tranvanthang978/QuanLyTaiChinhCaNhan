@@ -1,0 +1,800 @@
+﻿@using Newtonsoft.Json
+@using System.Globalization
+@using dacn.Models
+
+@{
+    //  KHAI BÁO DỮ LIỆU GỐC & BIẾN MÔI TRƯỜNG
+  
+    // Dữ liệu đã được nhóm theo Danh mục và tính tổng (cho biểu đồ tròn)
+    var thuList = ViewBag.ThuList as List<BaoCaoViewModel> ?? new List<BaoCaoViewModel>();
+    var chiList = ViewBag.ChiList as List<BaoCaoViewModel> ?? new List<BaoCaoViewModel>();
+
+    // Dữ liệu mới từ Controller:
+    // 1. Tổng hợp theo Ngày (cho biểu đồ đường lớn)
+    var dailySummary = ViewBag.DailySummary as List<ThongKeNgayViewModel> ?? new List<ThongKeNgayViewModel>();
+    // 2. Chi tiết giao dịch (để JS tự nhóm theo Danh mục & Ngày cho biểu đồ đường chi tiết)
+    var detailedTransactions = ViewBag.DetailedTransactions as List<BaoCaoViewModel> ?? new List<BaoCaoViewModel>();
+
+    // Chuẩn bị Culture cho định dạng số học và ngày tháng
+    var culture = System.Globalization.CultureInfo.InvariantCulture;
+    var vnCulture = new System.Globalization.CultureInfo("vi-VN");
+
+    // LẤY THÔNG TIN LỌC TỪ CONTROLLER ĐỂ HIỂN THỊ
+    var startDate = ViewBag.StartDate as DateTime?;
+    var endDate = ViewBag.EndDate as DateTime?;
+
+    string dateRangeText = "Tổng thời gian";
+    if (startDate.HasValue && endDate.HasValue)
+    {
+        dateRangeText = $"Từ ngày {startDate.Value.ToString("dd/MM/yyyy")} đến ngày {endDate.Value.ToString("dd/MM/yyyy")}";
+    }
+
+    //  CHUẨN BỊ DỮ LIỆU CHO JAVASCRIPT
+    // Dữ liệu chi tiết cho biểu đồ Doughnut
+    // @Html.Raw đảm bảo chuỗi JS hợp lệ
+    var thuLabels = string.Join(",", thuList.Select(x => "'" + x.TenDanhMuc + "'"));
+    var chiLabels = string.Join(",", chiList.Select(x => "'" + x.TenDanhMuc + "'"));
+
+    var thuData = string.Join(",", thuList.Select(x => x.TongTien.ToString("G", culture)));
+    var chiData = string.Join(",", chiList.Select(x => x.TongTien.ToString("G", culture)));
+
+    // Dữ liệu JSON mới cho biểu đồ đường tổng quan và chi tiết
+    var jsonDailySummary = JsonConvert.SerializeObject(dailySummary);
+    var jsonDetailedTransactions = JsonConvert.SerializeObject(detailedTransactions);
+
+    // Tính toán tổng hợp cho HTML
+    var tongThu = ViewBag.TongThu as decimal? ?? 0;
+    var tongChi = ViewBag.TongChi as decimal? ?? 0;
+    var chenhLech = tongThu - tongChi;
+}
+
+<main id="main" class="main">
+
+    <h2 class="pb-3 border-bottom">Báo cáo Thu – Chi <small class="text-muted fw-light d-block d-md-inline">(@dateRangeText)</small></h2>
+
+    <!-- KHU VỰC 1: BỘ LỌC THỜI GIAN -->
+    <form method="get" class="mb-4 p-4 border rounded shadow-sm bg-light-subtle">
+        <h5 class="fw-bold mb-3 text-primary">Chọn khoảng thời gian thống kê</h5>
+        <div class="row align-items-end">
+            <div class="col-md-5 mb-3 mb-md-0">
+                <label for="startDate" class="form-label fw-semibold">Ngày bắt đầu</label>
+                <input type="date" name="startDate" id="startDate" class="form-control"
+                       value="@(startDate.HasValue ? startDate.Value.ToString("yyyy-MM-dd") : "")" required />
+            </div>
+            <div class="col-md-5 mb-3 mb-md-0">
+                <label for="endDate" class="form-label fw-semibold">Ngày kết thúc</label>
+                <input type="date" name="endDate" id="endDate" class="form-control"
+                       value="@(endDate.HasValue ? endDate.Value.ToString("yyyy-MM-dd") : "")" required />
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100 shadow">
+                    <i class="bi bi-search me-1"></i> Lọc 
+                </button>
+            </div>
+        </div>
+    </form>
+    <!-- KẾT THÚC KHU VỰC 1 -->
+    <!-- KHU VỰC 2: CÁC NÚT XUẤT FILE -->
+    <div class="mb-4">
+        <button onclick="exportToPdf()" class="btn btn-danger me-3 shadow-sm">
+            <i class="bi bi-file-earmark-pdf-fill me-2"></i> Xuất PDF (Có Biểu đồ)
+        </button>
+        <a href="@Url.Action("ExportToExcelServer", "BaoCao", new { startDate = ViewBag.StartDate, endDate = ViewBag.EndDate })"
+           class="btn btn-success shadow-sm">
+            <i class="bi bi-file-earmark-excel-fill me-2"></i> Xuất Excel 
+        </a>
+
+
+    </div>
+    <!-- KẾT THÚC KHU VỰC 2 -->
+    <!-- BỌC TOÀN BỘ NỘI DUNG BÁO CÁO CHO CHỨC NĂNG XUẤT PDF -->
+    <div id="reportContainer">
+
+        <!-- DÒNG 1: TỔNG HỢP & BIỂU ĐỒ TỔNG QUAN -->
+        <div class="row">
+
+            <!-- CỘT TRÁI: TỔNG HỢP SỐ LIỆU -->
+            <div class="col-lg-6 mb-4">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <h4 class="card-title text-muted">Tổng hợp</h4>
+                        <ul class="list-unstyled">
+                            <!-- Thu (Màu Xanh Dương) -->
+                            <li class="p-2 mb-1 alert alert-primary bg-light-primary text-primary border-0 rounded shadow-sm">
+                                <strong>Tổng Thu:</strong>
+                                <span class="float-end fw-bold">@tongThu.ToString("N0", vnCulture) VNĐ</span>
+                            </li>
+                            <!-- Chi (Màu Hồng Pastel) -->
+                            <li class="p-2 mb-1 alert alert-secondary bg-light-secondary text-secondary border-0 rounded shadow-sm">
+                                <strong>Tổng Chi:</strong>
+                                <span class="float-end fw-bold">@tongChi.ToString("N0", vnCulture) VNĐ</span>
+                            </li>
+                            <!-- Chênh lệch -->
+                            <li class="p-2 alert @(chenhLech >= 0 ? "alert-info bg-light-info text-info" : "alert-secondary bg-light-secondary text-secondary") border-0 rounded shadow-sm">
+                                <strong>Chênh lệch:</strong>
+                                <span class="float-end fw-bolder">@chenhLech.ToString("N0", vnCulture) VNĐ</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CỘT PHẢI: BIỂU ĐỒ TỔNG QUAN -->
+            <div class="col-lg-6 mb-4">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <!-- Đã chuyển sang biểu đồ đường Thu-Chi theo ngày -->
+                        <h3 class="card-title text-muted">Biểu đồ Xu hướng Thu - Chi theo tháng </h3>
+                        <div style="max-height: 280px; margin: auto;">
+                            <canvas id="dailySummaryLineChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <hr class="mt-4 mb-4" />
+
+        <!-- BỌC CÁC BẢNG DỮ LIỆU RIÊNG CHO CHỨC NĂNG XUẤT EXCEL -->
+        <div id="thuChiTable">
+            <!-- Bảng tổng hợp theo tháng (ẩn hoặc có thể hiển thị) -->
+            <table id="monthlySummary" style="display:none;">
+                <thead>
+                    <tr>
+                        <th>Tháng</th>
+                        <th>Tổng Thu</th>
+                        <th>Tổng Chi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in ViewBag.MonthlySummary)
+                    {
+                        <tr>
+                            <td>@item.Ngay.ToString("MM/yyyy")</td>
+                            <td>@item.TongThu</td>
+                            <td>@item.TongChi</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <!-- DÒNG 2: CHI TIẾT THU VÀ CHI -->
+            <div class="row">
+
+                <!-- CỘT 1: KHOẢN THU (Bảng, Biểu đồ Tròn, Biểu đồ Đường Chi tiết) -->
+                <div class="col-md-6 mb-4">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-body">
+                            <h3 class="card-title text-primary">Khoản Thu (Tổng hợp theo Danh mục)</h3>
+                            <table class="table table-sm table-bordered table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Danh mục</th>
+                                        <th class="text-end">Tổng tiền</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in thuList)
+                                    {
+                                        <tr>
+                                            <td>@item.TenDanhMuc</td>
+                                            <td class="text-end text-primary">@item.TongTien.ToString("N0", vnCulture)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+
+                            <!-- Canvas cho biểu đồ Tròn Thu -->
+                            <h5 class="mt-4 pt-3 border-top text-primary">Phân bổ Khoản Thu</h5>
+                            <div style="max-height: 250px; max-width: 350px; margin: 15px auto 0 auto;">
+                                <canvas id="thuChart"></canvas>
+                            </div>
+
+                            <!-- Canvas cho Biểu đồ Đường Chi tiết Thu theo ngày -->
+                            <h5 class="mt-4 pt-3 border-top text-primary">Xu hướng Thu theo Danh mục </h5>
+                            <div class="mt-3" style="height: 400px; max-width: 100%; margin: 0 auto;">
+                                <canvas id="thuDetailedLineChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CỘT 2: KHOẢN CHI (Bảng, Biểu đồ Tròn, Biểu đồ Đường Chi tiết) -->
+                <div class="col-md-6 mb-4">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-body">
+                            <h3 class="card-title text-secondary">Khoản Chi (Tổng hợp theo Danh mục)</h3>
+                            <table class="table table-sm table-bordered table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Danh mục</th>
+                                        <th class="text-end">Tổng tiền</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in chiList)
+                                    {
+                                        <tr>
+                                            <td>@item.TenDanhMuc</td>
+                                            <td class="text-end text-secondary">@item.TongTien.ToString("N0", vnCulture)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+
+                            <!-- Canvas cho biểu đồ Tròn Chi -->
+                            <h5 class="mt-4 pt-3 border-top text-secondary">Phân bổ Khoản Chi</h5>
+                            <div style="max-height: 250px; max-width: 350px; margin: 15px auto 0 auto;">
+                                <canvas id="chiChart"></canvas>
+                            </div>
+
+                            <!-- Canvas cho Biểu đồ Đường Chi tiết Chi theo ngày -->
+                            <h5 class="mt-4 pt-3 border-top text-secondary">Xu hướng Chi theo Danh mục </h5>
+                            <div class="mt-3" style="height: 400px; max-width: 100%; margin: 0 auto;">
+                                <canvas id="chiDetailedLineChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div> <!-- /#thuChiTable -->
+
+    </div> <!-- /#reportContainer -->
+</main>
+
+
+@section scripts {
+    <!-- Thư viện Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- THƯ VIỆN CHO CHỨC NĂNG XUẤT FILE -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <script>
+       
+        // KHAI BÁO BIẾN TOÀN CỤC & INSTANCE CHART
+        
+        // Lấy dữ liệu đã được Controller cung cấp
+        var thuLabels = [@Html.Raw(thuLabels)];
+        var thuData = [@Html.Raw(thuData)];
+        var chiLabels = [@Html.Raw(chiLabels)];
+        var chiData = [@Html.Raw(chiData)];
+
+        // Dữ liệu THỰC TẾ mới từ Controller (JSON)
+        const dailySummaryData = @Html.Raw(ViewBag.jsonDailySummary ?? "[]"); // Dữ liệu tổng hợp (ngày / tháng)
+        const detailedTransactionsData = @Html.Raw(ViewBag.jsonDetailedTransactions ?? "[]"); // Dữ liệu chi tiết
+
+
+
+
+        // Định nghĩa Màu sắc
+        const ThuColor = '#2196F3'; // Xanh dương cho Thu
+        const ChiLineColor = '#F48FB1'; // Hồng Pastel cho Chi
+       
+        // Màu cho biểu đồ "Xu hướng Thu"
+        const ThuColors = [
+            '#6EC1E4', // xanh dương nhạt
+            '#A1DE93', // xanh lá mint
+            '#FFD166', // vàng dịu
+            '#F6A6B2', // hồng phấn
+            '#CDB4DB', // tím nhạt pastel
+            '#FFB5A7', // cam hồng nhạt
+            '#9ADCFF', // xanh pastel
+            '#FFCAD4', // hồng sữa
+            '#E4C1F9', // tím nhạt hơn
+            '#B5E48C'  // xanh lá sáng
+        ];
+
+        // Màu cho biểu đồ "Xu hướng Chi"
+        const ChiColors = [
+            '#FF6F61', // Đỏ san hô (Coral Red) - Rực rỡ
+            '#FFB347', // Cam quýt (Tangerine) - Tươi sáng
+            '#F7A072', // Cam đào đất (Terra Cotta) - Trầm ấm
+            '#FFA07A', // Hồng cá hồi nhạt (Light Salmon) - Dịu dàng
+            '#F9C3A3', // Hồng kem (Creamy Peach) - Nhạt, dễ chịu
+            '#D73B3E', // Đỏ gạch (Brick Red) - Mạnh mẽ
+            '#FFD700', // Vàng kim loại (Gold) - Nổi bật
+            '#FF7F50', // Đỏ cam (Coral) - Hài hòa
+            '#FFC0CB', // Hồng phấn (Pink) - Ngọt ngào
+            '#E9967A'  // Cam đậm (Dark Salmon) - Sang trọng
+        ];
+
+
+
+        // Biến lưu trữ Instance của Chart để quản lý 
+        let dailySummaryChartInstance = null;
+        let thuChartInstance = null;
+        let chiChartInstance = null;
+        let thuLineChartInstance = null;
+        let chiLineChartInstance = null;
+
+        // Hàm định dạng tiền tệ
+        function formatCurrency(value) {
+            // Sử dụng Intl.NumberFormat để định dạng VNĐ cho tooltip và trục Y
+            // Thay thế '₫' nếu cần thiết để giữ sạch chữ số
+            return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value).replace('₫', '').trim();
+        }
+
+        // BIỂU ĐỒ TỔNG QUAN (THU-CHI THEO NGÀY - LINE CHART)
+        
+        function drawDailySummaryChart() {
+            if (dailySummaryChartInstance) {
+                dailySummaryChartInstance.destroy(); // Hủy biểu đồ cũ trước khi vẽ lại
+            }
+
+            // ======= CHUẨN BỊ DỮ LIỆU =======
+            let labels = [];
+            let thu = [];
+            let chi = [];
+
+            // Kiểm tra xem dữ liệu là theo ngày (do người dùng lọc) hay theo tháng (mặc định)
+            const isDaily = dailySummaryData.length > 0 &&
+                dailySummaryData.some(d => new Date(d.Ngay).getDate() !== 1);
+
+            // =======  Nếu là dữ liệu NGÀY → vẽ theo ngày
+            if (isDaily) {
+                dailySummaryData.forEach(d => {
+                    const date = new Date(d.Ngay);
+                    labels.push(`${date.getDate()}/${date.getMonth() + 1}`);
+                    thu.push(d.TongThu);
+                    chi.push(d.TongChi);
+                });
+            }
+
+            // =======  Ngược lại → gộp dữ liệu theo THÁNG
+            else {
+                const monthlySummary = {};
+                dailySummaryData.forEach(d => {
+                    const date = new Date(d.Ngay);
+                    const key = `${date.getMonth() + 1}/${date.getFullYear()}`;
+                    if (!monthlySummary[key]) {
+                        monthlySummary[key] = { TongThu: 0, TongChi: 0 };
+                    }
+                    monthlySummary[key].TongThu += d.TongThu;
+                    monthlySummary[key].TongChi += d.TongChi;
+                });
+
+                labels = Object.keys(monthlySummary);
+                thu = labels.map(m => monthlySummary[m].TongThu);
+                chi = labels.map(m => monthlySummary[m].TongChi);
+            }
+
+            // =======  VẼ BIỂU ĐỒ =======
+            var ctx = document.getElementById('dailySummaryLineChart').getContext('2d');
+            dailySummaryChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Tổng Thu',
+                            data: thu,
+                            borderColor: ThuColor,
+                            backgroundColor: 'rgba(33, 150, 243, 0.2)',
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 4,
+                            pointBackgroundColor: ThuColor,
+                        },
+                        {
+                            label: 'Tổng Chi',
+                            data: chi,
+                            borderColor: ChiLineColor,
+                            backgroundColor: 'rgba(244, 143, 177, 0.2)',
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 4,
+                            pointBackgroundColor: ChiLineColor,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    return context.dataset.label + ': ' + formatCurrency(context.parsed.y);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { callback: formatCurrency }
+                        },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+
+        // BIỂU ĐỒ CHI TIẾT DANH MỤC THEO NGÀY (LINE CHART - nằm dưới biểu đồ tròn)
+
+        // Hàm chuẩn bị dữ liệu chi tiết cho biểu đồ đường
+        // === HÀM CHUẨN BỊ DỮ LIỆU BIỂU ĐỒ CHI TIẾT (THEO THÁNG) ===
+        function prepareDetailedLineChartData(type) {
+            // Lọc dữ liệu theo loại (Thu hoặc Chi)
+            const filteredData = (Array.isArray(detailedTransactionsData) ? detailedTransactionsData : [])
+                .filter(t => t.Loai === type);
+            if (!filteredData || filteredData.length === 0) return { labels: [], datasets: [] };
+
+            // Phát hiện xem dữ liệu là NGÀY hay THÁNG
+            const isDaily = filteredData.some(t => new Date(t.NgayGD).getDate() !== 1);
+
+            let labels = [];
+            const categories = [...new Set(filteredData.map(t => t.TenDanhMuc))];
+            const colorPalette = type === 'Thu' ? ThuColors : ChiColors;
+
+            let datasets = [];
+
+            if (isDaily) {
+                // ======= GỘP THEO NGÀY =======
+                const groupedByDate = {};
+                filteredData.forEach(t => {
+                    const date = new Date(t.NgayGD);
+                    const key = `${date.getDate()}/${date.getMonth() + 1}`;
+                    if (!groupedByDate[key]) groupedByDate[key] = [];
+                    groupedByDate[key].push(t);
+                });
+
+                labels = Object.keys(groupedByDate);
+
+                datasets = categories.map((category, index) => {
+                    const dataPoints = labels.map(dateLabel => {
+                        const dayData = groupedByDate[dateLabel]?.filter(t => t.TenDanhMuc === category) || [];
+                        return dayData.reduce((sum, t) => sum + t.TongTien, 0);
+                    });
+
+                    return {
+                        label: category,
+                        data: dataPoints,
+                        borderColor: colorPalette[index % colorPalette.length],
+                        backgroundColor: colorPalette[index % colorPalette.length] + '40',
+                        fill: false,
+                        tension: 0.25,
+                        pointRadius: 3,
+                        hidden: categories.length > 8 && index >= 8
+                    };
+                });
+            } else {
+                // ======= GỘP THEO THÁNG =======
+                const groupedByMonth = {};
+                filteredData.forEach(t => {
+                    const date = new Date(t.NgayGD);
+                    const key = `${date.getMonth() + 1}/${date.getFullYear()}`;
+                    if (!groupedByMonth[key]) groupedByMonth[key] = [];
+                    groupedByMonth[key].push(t);
+                });
+
+                labels = Object.keys(groupedByMonth);
+
+                datasets = categories.map((category, index) => {
+                    const dataPoints = labels.map(month => {
+                        const monthData = groupedByMonth[month]?.filter(t => t.TenDanhMuc === category) || [];
+                        return monthData.reduce((sum, t) => sum + t.TongTien, 0);
+                    });
+
+                    return {
+                        label: category,
+                        data: dataPoints,
+                        borderColor: colorPalette[index % colorPalette.length],
+                        backgroundColor: colorPalette[index % colorPalette.length] + '40',
+                        fill: false,
+                        tension: 0.25,
+                        pointRadius: 3,
+                        hidden: categories.length > 8 && index >= 8
+                    };
+                });
+            }
+            return { labels, datasets };
+        }
+
+        function drawDetailedLineCharts() {
+            // --- Biểu đồ Chi tiết Thu ---
+            if (thuLineChartInstance) { thuLineChartInstance.destroy(); }
+
+            const thuDetailedData = prepareDetailedLineChartData('Thu');
+            var thuLineCtx = document.getElementById('thuDetailedLineChart').getContext('2d');
+            thuLineChartInstance = new Chart(thuLineCtx, {
+                type: 'line',
+                data: thuDetailedData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    return context.dataset.label + ': ' + formatCurrency(context.parsed.y);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { callback: formatCurrency } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // --- Biểu đồ Chi tiết Chi ---
+            if (chiLineChartInstance) { chiLineChartInstance.destroy(); }
+
+            const chiDetailedData = prepareDetailedLineChartData('Chi');
+            var chiLineCtx = document.getElementById('chiDetailedLineChart').getContext('2d');
+            chiLineChartInstance = new Chart(chiLineCtx, {
+                type: 'line',
+                data: chiDetailedData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    return context.dataset.label + ': ' + formatCurrency(context.parsed.y);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { callback: formatCurrency } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        // . BIỂU ĐỒ TRÒN (DOUGHNUT)
+       
+        function drawDoughnutCharts() {
+            // Biểu đồ Chi tiết Khoản Thu
+            if (thuChartInstance) { thuChartInstance.destroy(); }
+
+            var thuCtx = document.getElementById('thuChart').getContext('2d');
+            thuChartInstance = new Chart(thuCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: thuLabels,
+                    datasets: [{
+                        data: thuData,
+                        backgroundColor: ThuColors,
+                        borderColor: '#fff',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: { display: false },
+                        legend: { display: true, position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                // Thêm định dạng tiền tệ và phần trăm vào tooltip của Doughnut
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        label += formatCurrency(context.parsed);
+                                    }
+                                    const total = context.dataset.data.reduce((a, b) => a + parseFloat(b), 0);
+                                    const value = parseFloat(context.parsed);
+                                    const percentage = total > 0 ? ((value / total) * 100).toFixed(2) + '%' : '0%';
+                                    return label + ' (' + percentage + ')';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Biểu đồ Chi tiết Khoản Chi
+            if (chiChartInstance) { chiChartInstance.destroy(); }
+
+            var chiCtx = document.getElementById('chiChart').getContext('2d');
+            chiChartInstance = new Chart(chiCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: chiLabels,
+                    datasets: [{
+                        data: chiData,
+                        backgroundColor: ChiColors,
+                        borderColor: '#fff',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: { display: false },
+                        legend: { display: true, position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        label += formatCurrency(context.parsed);
+                                    }
+                                    const total = context.dataset.data.reduce((a, b) => a + parseFloat(b), 0);
+                                    const value = parseFloat(context.parsed);
+                                    const percentage = total > 0 ? ((value / total) * 100).toFixed(2) + '%' : '0%';
+                                    return label + ' (' + percentage + ')';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+
+        // CHỨC NĂNG XUẤT FILE 
+      
+
+        function exportToPdf() {
+            // Hiển thị thông báo đang xử lý
+            const pdfButton = document.querySelector('.btn-danger');
+            const originalButtonText = pdfButton.innerHTML;
+            pdfButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Đang tạo PDF...';
+            pdfButton.disabled = true;
+
+            const { jsPDF } = window.jspdf;
+            const element = document.getElementById('reportContainer');
+
+            // Tăng scale để ảnh chụp chất lượng cao hơn
+            const options = {
+                scale: 2,
+                useCORS: true
+            };
+
+            html2canvas(element, options).then(canvas => {
+                const imgData = canvas.toDataURL('image/jpeg', 1.0);
+
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const imgProps = pdf.getImageProperties(imgData);
+                // Tính toán chiều cao ảnh để giữ nguyên tỷ lệ
+                const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+                // Chiều cao A4 theo mm
+                const a4Height = 297;
+                let heightLeft = imgHeight;
+                let position = 0;
+
+                // Xử lý chia trang nếu nội dung dài hơn 1 trang A4
+                pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeight);
+                heightLeft -= a4Height;
+
+                while (heightLeft >= 0) {
+                    position = heightLeft - imgHeight;
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeight);
+                    heightLeft -= a4Height;
+                }
+
+                pdf.save('BaoCaoThuChi_Full.pdf');
+
+                // Khôi phục nút bấm
+                pdfButton.innerHTML = originalButtonText;
+                pdfButton.disabled = false;
+            }).catch(error => {
+                console.error("Lỗi khi tạo PDF:", error);
+                // Khôi phục nút bấm khi gặp lỗi
+                pdfButton.innerHTML = originalButtonText;
+                pdfButton.disabled = false;
+            });
+        }
+
+
+        function exportTableToExcel(tableId, filename = '') {
+            // Hiển thị thông báo đang xử lý
+            const excelButton = document.querySelector('.btn-success');
+            const originalButtonText = excelButton.innerHTML;
+            excelButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Đang tạo Excel...';
+            excelButton.disabled = true;
+
+            var htmls = "";
+            var uri = 'data:application/vnd.ms-excel;base64,';
+            var template = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>{worksheet}</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>{table}</body></html>';
+            var base64 = function (s) { return window.btoa(unescape(encodeURIComponent(s))); };
+            var format = function (s, c) { return s.replace(/{(\w+)}/g, function (m, p) { return c[p]; }); };
+
+            // Lấy ngày lọc từ input hoặc biến toàn cục
+            var startDate = document.getElementById('startDate')?.value || '';
+            var endDate = document.getElementById('endDate')?.value || '';
+            if (startDate && endDate) {
+                htmls += `<table border="1" style="border-collapse:collapse;font-family:Arial,sans-serif;text-align:center;width:100%"><tr><td colspan="2"><strong>BÁO CÁO TỪ ${startDate} ĐẾN ${endDate}</strong></td></tr><tr><td>&nbsp;</td></tr></table>`;
+            } else {
+                htmls += `<table border="1" style="border-collapse:collapse;font-family:Arial,sans-serif;text-align:center;width:100%"><tr><td colspan="2"><strong>BÁO CÁO 6 THÁNG GẦN NHẤT</strong></td></tr><tr><td>&nbsp;</td></tr></table>`;
+            }
+
+            // Lấy nội dung tổng hợp (Thu, Chi, Chênh lệch)
+            var summaryListItems = document.querySelectorAll('.list-unstyled li');
+            let summaryHtml = '<table border="1" style="border-collapse:collapse;font-family:Arial,sans-serif;text-align:center;width:100%">';
+            summaryHtml += '<tr style="background-color:#f2f2f2"><td colspan="2"><strong>TỔNG HỢP KẾT QUẢ</strong></td></tr>';
+            summaryListItems.forEach(item => {
+                const title = item.querySelector('strong')?.innerText.replace(':', '') || '';
+                const value = item.querySelector('.float-end')?.innerText || '';
+                if (title && value) {
+                    summaryHtml += `<tr><td>${title}</td><td>${value}</td></tr>`;
+                }
+            });
+            summaryHtml += '<tr><td>&nbsp;</td></tr></table>';
+            htmls += summaryHtml;
+
+            // Thêm bảng tổng hợp theo tháng (ẩn trên giao diện)
+            var monthlyTable = document.getElementById('monthlySummary');
+            if (monthlyTable) {
+                monthlyTable.setAttribute('border', '1');
+                monthlyTable.style.borderCollapse = 'collapse';
+                monthlyTable.style.textAlign = 'center';
+                monthlyTable.style.fontFamily = 'Arial, sans-serif';
+                htmls += monthlyTable.outerHTML;
+                htmls += '<table><tr><td>&nbsp;</td></tr></table>'; // Dòng trống ngăn cách
+            }
+
+            // Thêm nội dung của tất cả các bảng chi tiết vào chuỗi HTML lớn
+            var tables = document.getElementById(tableId).getElementsByTagName("table");
+            for (var i = 0; i < tables.length; i++) {
+                var tableTitle = tables[i].closest('.card-body').querySelector('.card-title')?.innerText || '';
+                if (tableTitle) {
+                    htmls += `<table border="1" style="border-collapse:collapse;font-family:Arial,sans-serif;text-align:center;width:100%"><tr style="background-color:#f2f2f2"><td colspan="${tables[i].rows[0].cells.length}"><strong>${tableTitle}</strong></td></tr></table>`;
+                }
+                tables[i].setAttribute('border', '1');
+                tables[i].style.borderCollapse = 'collapse';
+                tables[i].style.textAlign = 'center';
+                tables[i].style.fontFamily = 'Arial, sans-serif';
+                htmls += tables[i].outerHTML;
+                htmls += '<table><tr><td>&nbsp;</td></tr></table>'; // Dòng trống ngăn cách
+            }
+
+            var ctx = {
+                worksheet: filename || 'Worksheet',
+                table: htmls
+            };
+
+            // Tạo link download
+            var link = document.createElement("a");
+            link.href = uri + base64(format(template, ctx));
+            link.download = filename + '.xls';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            // Khôi phục nút bấm
+            excelButton.innerHTML = originalButtonText;
+            excelButton.disabled = false;
+        }
+
+
+
+
+        // Chạy các hàm vẽ biểu đồ khi DOM đã sẵn sàng
+        document.addEventListener('DOMContentLoaded', function () {
+            // Vẽ biểu đồ tổng quan
+            if (dailySummaryData && dailySummaryData.length > 0) {
+                drawDailySummaryChart();
+            }
+
+            // Vẽ biểu đồ chi tiết (Doughnut và Line)
+            drawDoughnutCharts();
+            if (detailedTransactionsData && detailedTransactionsData.length > 0) {
+                drawDetailedLineCharts();
+            }
+        });
+
+    </script>
+}

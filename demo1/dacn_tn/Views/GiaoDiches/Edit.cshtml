@@ -1,0 +1,89 @@
+﻿@model dacn.Models.GiaoDich
+
+@{
+    ViewBag.Title = "Chỉnh Sửa Giao Dịch";
+    
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<main id="main" class="main">
+    <div class="pagetitle">
+        <h1>Chỉnh Sửa Giao Dịch</h1>
+        <nav>
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="@Url.Action("Index", "TrangChu")">Trang chủ</a></li>
+                <li class="breadcrumb-item"><a href="@Url.Action("Index", "GiaoDiches")">Giao Dịch</a></li>
+                <li class="breadcrumb-item active">Chỉnh Sửa</li>
+            </ol>
+        </nav>
+    </div><section class="section">
+        <div class="row">
+            <div class="col-lg-8">
+
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Chi Tiết Giao Dịch</h5>
+
+                        @using (Html.BeginForm("Edit", "GiaoDiches", FormMethod.Post, new { @class = "row g-3" }))
+                        {
+                           
+                            @Html.AntiForgeryToken()
+
+                            @* Khóa Chính: Bắt buộc để biết bản ghi nào cần cập nhật *@
+                            @Html.HiddenFor(model => model.MaGiaoDich)
+
+                            @* KHẮC PHỤC LỖI FOREIGN KEY: Truyền MaNguoiDung trở lại Controller *@
+                            @Html.HiddenFor(model => model.MaNguoiDung)
+
+                            @* Hiển thị tóm tắt lỗi chung *@
+                            <div class="col-md-12">
+                                @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
+                            </div>
+                           
+
+                            <div class="col-md-6">
+                                @Html.LabelFor(model => model.MaDanhMuc, "Danh mục", htmlAttributes: new { @class = "form-label" })
+                                @Html.DropDownList("MaDanhMuc", null, new { @class = "form-select" })
+                                @Html.ValidationMessageFor(model => model.MaDanhMuc, "", new { @class = "text-danger" })
+                            </div>
+
+                            <div class="col-md-6">
+                                @Html.LabelFor(model => model.SoTien, "Số tiền", htmlAttributes: new { @class = "form-label" })
+                                @* Thêm type="number" để hiển thị đúng dữ liệu số *@
+                                @Html.EditorFor(model => model.SoTien, new { htmlAttributes = new { @class = "form-control", @type = "number" } })
+                                @Html.ValidationMessageFor(model => model.SoTien, "", new { @class = "text-danger" })
+                            </div>
+
+                            <div class="col-md-6">
+                                @Html.LabelFor(model => model.NgayGD, "Ngày giao dịch", htmlAttributes: new { @class = "form-label" })
+                                @* Thêm type="date" để khắc phục lỗi 400 Bad Request và hiển thị Date Picker *@
+                                @Html.EditorFor(model => model.NgayGD, new { htmlAttributes = new { @class = "form-control", @type = "date" } })
+                                @Html.ValidationMessageFor(model => model.NgayGD, "", new { @class = "text-danger" })
+                            </div>
+
+                            <div class="col-md-12">
+                                @Html.LabelFor(model => model.MoTa, "Mô tả / Ghi chú", htmlAttributes: new { @class = "form-label" })
+                                @* Dùng TextArea cho mô tả *@
+                                @Html.TextAreaFor(model => model.MoTa, 4, 100, new { @class = "form-control" })
+                                @Html.ValidationMessageFor(model => model.MoTa, "", new { @class = "text-danger" })
+                            </div>
+
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-success">Lưu Thay Đổi</button>
+                                <a href="@Url.Action("Index")" class="btn btn-secondary">Quay lại danh sách</a>
+                            </div>
+                        }
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+</main>@section Scripts {
+    <!-- Load jQuery từ CDN trước validate -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="~/Scripts/jquery.validate.min.js"></script>
+    <script src="~/Scripts/jquery.validate.unobtrusive.min.js"></script>
+}

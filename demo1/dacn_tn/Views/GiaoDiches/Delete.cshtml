@@ -1,0 +1,89 @@
+﻿@model dacn.Models.GiaoDich
+
+@{
+    ViewBag.Title = "Xóa Giao Dịch";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<main id="main" class="main">
+    <div class="pagetitle">
+        <h1>Xóa Giao Dịch</h1>
+        <nav>
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="@Url.Action("Index", "TrangChu")">Trang chủ</a></li>
+                <li class="breadcrumb-item"><a href="@Url.Action("Index", "GiaoDiches")">Giao Dịch</a></li>
+                <li class="breadcrumb-item active">Xóa</li>
+            </ol>
+        </nav>
+    </div><section class="section">
+        <div class="row justify-content-center">
+
+            <div class="col-lg-6">
+
+                <div class="card">
+                    <div class="card-body pt-3">
+                        <h5 class="card-title text-danger">XÁC NHẬN XÓA GIAO DỊCH</h5>
+
+                        <div class="alert alert-danger" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            Bạn có chắc chắn muốn xóa giao dịch này không? Hành động này không thể hoàn tác!
+                        </div>
+
+                        <dl class="row pt-2">
+                            @* Sử dụng Bootstrap 5 details list *@
+
+                            <dt class="col-sm-4 fw-bold">
+                                @Html.DisplayNameFor(model => model.DanhMuc.TenDanhMuc)
+                            </dt>
+                            <dd class="col-sm-8">
+                                @Html.DisplayFor(model => model.DanhMuc.TenDanhMuc)
+                            </dd>
+
+                            <dt class="col-sm-4 fw-bold">
+                                @Html.DisplayNameFor(model => model.MoTa)
+                            </dt>
+                            <dd class="col-sm-8">
+                                @Html.DisplayFor(model => model.MoTa)
+                            </dd>
+
+                            <dt class="col-sm-4 fw-bold">
+                                @Html.DisplayNameFor(model => model.NgayGD)
+                            </dt>
+                            <dd class="col-sm-8">
+                                @* Hiển thị Ngày và Giờ *@
+                                @Model.NgayGD.ToString("dd/MM/yyyy HH:mm")
+                            </dd>
+
+                            <dt class="col-sm-4 fw-bold">
+                                @Html.DisplayNameFor(model => model.SoTien)
+                            </dt>
+                            <dd class="col-sm-8 text-danger fw-bold">
+                                @* Định dạng hiển thị tiền tệ *@
+                                @String.Format("{0:N0}", Model.SoTien) VNĐ
+                            </dd>
+
+                        </dl>
+
+                        @* Form xóa và nút hành động *@
+                        @using (Html.BeginForm())
+                        {
+                            @Html.AntiForgeryToken()
+
+                            <div class="mt-4">
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="bi bi-trash"></i> Xóa Giao Dịch
+                                </button>
+                                <a href="@Url.Action("Index")" class="btn btn-secondary ms-2">
+                                    <i class="bi bi-arrow-left"></i> Hủy
+                                </a>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </section>
+
+</main>

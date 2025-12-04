@@ -1,0 +1,63 @@
+﻿@model List<string>
+
+<li class="nav-item dropdown">
+    <a class="nav-link nav-icon" href="#" data-bs-toggle="dropdown">
+        <i class="bi bi-bell"></i>
+        <span class="badge bg-primary badge-number">@Model.Count</span>
+    </a>
+
+    <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow notifications">
+        <li class="dropdown-header">
+            Bạn có @Model.Count thông báo
+            <a href="#"><span class="badge rounded-pill bg-primary p-2 ms-2">Xem tất cả</span></a>
+        </li>
+        <li><hr class="dropdown-divider"></li>
+
+        @if (Model != null && Model.Count > 0)
+        {
+            foreach (var note in Model)
+            {
+                if (note.Contains("TYPE:OVER"))
+                {
+                    <li class="notification-item">
+                        <i class="bi bi-x-octagon text-danger"></i>
+                        <div>
+                            <h4>🚨 Ngân sách vượt hạn mức</h4>
+                            <p>@note</p>
+                            <p class="text-muted small">Hãy kiểm tra lại chi tiêu ngay!</p>
+                        </div>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                }
+                
+                else
+                {
+                    <li class="notification-item">
+                        <i class="bi bi-info-circle text-info"></i>
+                        <div>
+                            <h4>Thông báo</h4>
+                            <p>@note</p>
+                            
+                        </div>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                }
+            }
+        }
+
+        else
+        {
+            <li class="notification-item">
+                <div class="text-center">
+                    <i class="bi bi-bell-slash text-muted fs-4"></i>
+                    <h5 class="mt-2">Không có thông báo</h5>
+                </div>
+            </li>
+        }
+
+
+        <li class="dropdown-footer">
+            <a href="#">Xem tất cả thông báo</a>
+        </li>
+    </ul>
+</li>

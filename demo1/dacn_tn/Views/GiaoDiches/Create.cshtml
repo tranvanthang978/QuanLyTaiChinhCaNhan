@@ -1,0 +1,73 @@
+﻿@model dacn.Models.GiaoDich
+
+@{
+    ViewBag.Title = "Thêm Giao Dịch Mới";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<main id="main" class="main">
+    <div class="pagetitle">
+        <h1>Quản lý Giao Dịch</h1>
+        <nav>
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="@Url.Action("Index", "TrangChu")">Trang chủ</a></li>
+                <li class="breadcrumb-item"><a href="@Url.Action("Index", "GiaoDiches")">Giao Dịch</a></li>
+                <li class="breadcrumb-item active">Thêm mới</li>
+            </ol>
+        </nav>
+    </div>
+    <section class="section">
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Thêm Giao Dịch</h5>
+
+                        @using (Html.BeginForm("Create", "GiaoDiches", FormMethod.Post, new { @class = "row g-3" }))
+                        {
+                            @Html.AntiForgeryToken()
+
+                            <div class="col-md-12">
+                                @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
+                            </div>
+
+                            <div class="col-md-6">
+                                @Html.LabelFor(model => model.MaDanhMuc, "Danh mục", htmlAttributes: new { @class = "form-label" })
+                                @* Sửa DropDownList lấy từ ViewBag *@
+                                @Html.DropDownListFor(model => model.MaDanhMuc, (SelectList)ViewBag.MaDanhMuc, "--- Chọn danh mục ---", new { @class = "form-select" })
+                                @Html.ValidationMessageFor(model => model.MaDanhMuc, "", new { @class = "text-danger" })
+                            </div>
+
+                            <div class="col-md-6">
+                                @Html.LabelFor(model => model.SoTien, "Số tiền", htmlAttributes: new { @class = "form-label" })
+                                @Html.EditorFor(model => model.SoTien, new { htmlAttributes = new { @class = "form-control", @type = "number", @placeholder = "Ví dụ: 500000" } })
+                                @Html.ValidationMessageFor(model => model.SoTien, "", new { @class = "text-danger" })
+                            </div>
+
+                            <div class="col-md-6">
+                                @Html.LabelFor(model => model.NgayGD, "Ngày giao dịch", htmlAttributes: new { @class = "form-label" })
+                                @Html.EditorFor(model => model.NgayGD, new { htmlAttributes = new { @class = "form-control", @type = "date" } })
+                                @Html.ValidationMessageFor(model => model.NgayGD, "", new { @class = "text-danger" })
+                            </div>
+
+                            <div class="col-md-12">
+                                @Html.LabelFor(model => model.MoTa, "Mô tả / Ghi chú", htmlAttributes: new { @class = "form-label" })
+                                @Html.TextAreaFor(model => model.MoTa, 4, 100, new { @class = "form-control", @placeholder = "Ghi chú chi tiết về giao dịch..." })
+                                @Html.ValidationMessageFor(model => model.MoTa, "", new { @class = "text-danger" })
+                            </div>
+
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">Thêm Giao Dịch</button>
+                                <a href="@Url.Action("Index")" class="btn btn-secondary">Quay lại danh sách</a>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+@section Scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+}

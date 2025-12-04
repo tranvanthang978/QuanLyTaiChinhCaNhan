@@ -1,0 +1,69 @@
+﻿@model IEnumerable<dacn.Models.NguoiDung>
+@{
+    Layout = "~/Views/Shared/AuthLayout.cshtml";
+    ViewBag.Title = "Đăng nhập";
+}
+
+<div class="login-container">
+    <div class="login-card">
+        <div class="text-center">
+            <div class="login-icon">
+                <i class="bi bi-wallet2 fs-1 text-primary"></i>
+            </div>
+            <h3 class="mb-3">Theo dõi Chi tiêu Cá nhân</h3>
+            <p class="text-muted mb-4">Đăng nhập vào tài khoản của bạn</p>
+        </div>
+
+        @using (Html.BeginForm("DangNhap", "NguoiDungs", FormMethod.Post, new { @class = "login-form" }))
+        {
+            <div class="mb-3">
+                <div class="form-floating">
+                    @Html.TextBox("TenDangNhap", null, new { @class = "form-control", placeholder = " " })
+                    <i class="bi bi-person-fill input-icon"></i>
+                    <label>Tên đăng nhập</label>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <div class="form-floating">
+                    @Html.Password("MatKhau", null, new { @class = "form-control", placeholder = " " })
+                    <i class="bi bi-lock-fill input-icon"></i>
+                    <i class="bi bi-eye-slash password-toggle" id="togglePassword"></i>
+                    <label>Mật khẩu</label>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 login-button">Đăng nhập</button>
+
+            <div class="text-center mt-4">
+                <p class="mb-0">
+                    Chưa có tài khoản?
+                    <a href="@Url.Action("Create","NguoiDungs")" class="text-decoration-none">Đăng ký ngay</a>
+                </p>
+            </div>
+        }
+
+        <div class="copyright-section">
+            <p class="copyright-text">© 2025 - Chào mừng đến với hệ thống theo dõi chi tiêu cá nhân</p>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('togglePassword').addEventListener('click', function () {
+            const passwordInput = document.querySelector('input[name="MatKhau"]');
+            const toggleIcon = this;
+
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.classList.remove('bi-eye-slash');
+                toggleIcon.classList.add('bi-eye');
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.classList.remove('bi-eye');
+                toggleIcon.classList.add('bi-eye-slash');
+            }
+        });
+    </script>
+}

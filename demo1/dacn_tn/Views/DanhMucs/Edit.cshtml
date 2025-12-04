@@ -1,0 +1,95 @@
+﻿@model dacn.Models.DanhMuc
+
+@{
+    string loai = Model?.Loai ?? "Thu";
+    string title = loai == "Thu" ? "Khoản Thu" : "Khoản Chi";
+    ViewBag.Title = "Sửa " + title;
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var giaoDichGanNhat = Model?.GiaoDich?.OrderByDescending(gd => gd.NgayGD).FirstOrDefault();
+}
+
+<main id="main" class="main">
+    <div class="pagetitle">
+        <h1>Sửa @title</h1>
+        <nav>
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="@Url.Action("Index", "TrangChu")">Trang chủ</a></li>
+                <li class="breadcrumb-item"><a href="@Url.Action("Khoan" + loai, "DanhMucs")">@title</a></li>
+                <li class="breadcrumb-item active">Sửa thông tin</li>
+            </ol>
+        </nav>
+    </div>
+
+    <section class="section">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Thông tin @title</h5>
+
+                        @using (Html.BeginForm("Edit", "DanhMucs", FormMethod.Post, new { @class = "row g-3" }))
+                        {
+                            @Html.AntiForgeryToken()
+                            @Html.HiddenFor(model => model.MaDanhMuc)
+                            @Html.HiddenFor(model => model.Loai)
+                            @Html.HiddenFor(model => model.MaNguoiDung)
+
+                            <div class="col-md-12">
+                                <div class="form-floating">
+                                    @Html.TextBoxFor(model => model.TenDanhMuc, new { @class = "form-control", placeholder = "Nhập tên danh mục", required = "required" })
+                                    @Html.LabelFor(model => model.TenDanhMuc)
+                                    @Html.ValidationMessageFor(model => model.TenDanhMuc, "", new { @class = "text-danger" })
+                                </div>
+                            </div>
+
+                            if (giaoDichGanNhat != null)
+                            {
+                                <div class="col-md-12">
+                                    <div class="form-floating">
+                                        @Html.TextBox("MoTa", giaoDichGanNhat.MoTa, new { @class = "form-control", placeholder = "Nhập mô tả" })
+                                        <label for="MoTa">Mô tả</label>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        @Html.TextBox("SoTien", giaoDichGanNhat.SoTien, new { @class = "form-control", type = "number", step = "0.01", placeholder = "Nhập số tiền", required = "required" })
+                                        <label for="SoTien">Số tiền (VNĐ)</label>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        @Html.TextBox("NgayGD", giaoDichGanNhat.NgayGD.ToString("yyyy-MM-ddTHH:mm"), new { @class = "form-control", type = "datetime-local", required = "required" })
+                                        <label for="NgayGD">Ngày giao dịch</label>
+                                    </div>
+                                </div>
+                            }
+
+                            <div class="text-center">
+                                <button type="submit" class="btn btn-primary">Cập nhật</button>
+                                <a href="@Url.Action("Khoan" + loai, "DanhMucs")" class="btn btn-secondary">Hủy bỏ</a>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('form').submit(function () {
+                var soTien = $('#SoTien').val();
+                if (soTien <= 0) {
+                    alert('Số tiền phải lớn hơn 0');
+                    return false;
+                }
+                return true;
+            });
+        });
+    </script>
+}

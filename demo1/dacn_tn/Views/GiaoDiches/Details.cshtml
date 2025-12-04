@@ -1,0 +1,80 @@
+﻿@model dacn.Models.GiaoDich
+
+@{
+    ViewBag.Title = "Chi Tiết Giao Dịch";
+    
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<main id="main" class="main">
+    <div class="pagetitle">
+        <h1>Chi Tiết Giao Dịch</h1>
+        <nav>
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="@Url.Action("Index", "TrangChu")">Trang chủ</a></li>
+                <li class="breadcrumb-item"><a href="@Url.Action("Index", "GiaoDiches")">Giao Dịch</a></li>
+                <li class="breadcrumb-item active">Chi Tiết</li>
+            </ol>
+        </nav>
+    </div><section class="section">
+        <div class="row justify-content-center">
+            @* <-- Thêm justify-content-center để căn giữa *@
+
+            <div class="col-lg-6">
+
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Thông Tin Chi Tiết Giao Dịch</h5>
+
+                        <dl class="row pt-2">
+                            @* Sử dụng lớp row để căn chỉnh theo kiểu danh sách chi tiết *@
+
+                            <dt class="col-sm-4 fw-bold">
+                                @Html.DisplayNameFor(model => model.DanhMuc.TenDanhMuc)
+                            </dt>
+                            <dd class="col-sm-8">
+                                @Html.DisplayFor(model => model.DanhMuc.TenDanhMuc)
+                            </dd>
+
+                            <dt class="col-sm-4 fw-bold">
+                                @Html.DisplayNameFor(model => model.MoTa)
+                            </dt>
+                            <dd class="col-sm-8">
+                                @Html.DisplayFor(model => model.MoTa)
+                            </dd>
+
+                            <dt class="col-sm-4 fw-bold">
+                                @Html.DisplayNameFor(model => model.NgayGD)
+                            </dt>
+                            <dd class="col-sm-8">
+                                @* Hiển thị Ngày và Giờ theo định dạng Việt Nam *@
+                                @Model.NgayGD.ToString("dd/MM/yyyy HH:mm")
+                            </dd>
+
+                            <dt class="col-sm-4 fw-bold">
+                                @Html.DisplayNameFor(model => model.SoTien)
+                            </dt>
+                            <dd class="col-sm-8 text-danger fw-bold">
+                                @* Định dạng hiển thị tiền tệ (ví dụ: 1.000.000 VNĐ) *@
+                                @String.Format("{0:N0}", Model.SoTien) VNĐ
+                            </dd>
+
+                        </dl>
+
+                    </div>
+                </div>
+
+                <p>
+                    <a href="@Url.Action("Edit", new { id = Model.MaGiaoDich })" class="btn btn-primary">
+                        <i class="bi bi-pencil"></i> Sửa
+                    </a>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Quay lại
+                    </a>
+                </p>
+
+            </div>
+
+        </div> 
+
+            
